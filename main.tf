@@ -16,11 +16,13 @@ provider "aws" {
 
 locals {
   proj   = "cloud-drive"
-  region = "eu-west-3"  # Paris
+  region = "eu-west-3" # Paris
 
-  default_ami           = "ami-0bfddfb1ccc3a6993"  # Amazon Linux 2
-  default_instance_type = "t3a.micro"
-  default_public_key    = join(".", [local.proj, "pub"]) // will return "key_name.pub"
+  default_ami            = "ami-0bfddfb1ccc3a6993" # Amazon Linux 2
+  default_instance_type  = "t3a.micro"
+  default_public_key     = join(".", [local.proj, "pub"]) // will return "key_name.pub"
+  drive_subdomain        = join(".", ["drive", var.apex_domain])
+  docker_compose_version = "1.26.2"
   tags = {
     Name = local.proj
   }
@@ -66,6 +68,7 @@ resource "aws_key_pair" "default" {
 resource "aws_security_group" "default" {
   vpc_id = aws_vpc.default.id
   tags   = local.tags
+  name   = "Default SG"
 
   ingress {
     from_port   = 22
@@ -89,20 +92,54 @@ resource "aws_security_group" "default" {
   }
 }
 
+resource "aws_eip" "ip" {
+  instance = aws_instance.public.id
+  tags     = local.tags
+}
+
 resource "aws_ebs_volume" "public_volume" {
-  availability_zone   = join("", [local.region, "a"])
-  size                = 5
-  type                = "gp2"
-  tags                = local.tags
+  availability_zone = join("", [local.region, "b"])
+  size              = 5
+  type              = "gp2"
+  tags              = local.tags
 }
 
 resource "aws_instance" "public" {
-  ami             = local.default_ami
-  instance_type   = local.default_instance_type
-  subnet_id       = aws_subnet.public.id
-  key_name        = aws_key_pair.default.key_name
-  security_groups = [aws_security_group.default.id]
-  tags            = local.tags
+  ami                    = local.default_ami
+  instance_type          = local.default_instance_type
+  subnet_id              = aws_subnet.public.id
+  key_name               = aws_key_pair.default.key_name
+  vpc_security_group_ids = [aws_security_group.default.id]
+  tags                   = local.tags
+
+  connection {
+    # The default username for our AMI
+    user = "ec2-user"
+    host = self.public_ip
+
+    # The connection will use the local SSH agent for authentication.
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo yum update -y && sudo yum install docker -y",
+      "sudo curl -L \"https://github.com/docker/compose/releases/download/${local.docker_compose_version}/docker-compose-$(uname -s)-$(uname -m)\" -o /usr/local/bin/docker-compose",
+      "sudo chmod u+x /usr/local/bin/docker-compose"
+    ]
+  }
 }
 
+
+data "aws_route53_zone" "primary" {
+  name = var.apex_domain
+}
+
+
+resource "aws_route53_record" "drive_A" {
+  name    = local.drive_subdomain
+  type    = "A"
+  ttl     = 30
+  zone_id = data.aws_route53_zone.primary.zone_id
+  records = [aws_instance.public.public_ip]
+}
 
