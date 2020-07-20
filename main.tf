@@ -19,7 +19,7 @@ locals {
   region = "eu-west-3" # Paris
 
   default_ami            = "ami-0bfddfb1ccc3a6993" # Amazon Linux 2
-  default_instance_type  = "t3a.micro"
+  default_instance_type  = "t3a.nano"
   default_public_key     = join(".", [local.proj, "pub"]) // will return "key_name.pub"
   drive_subdomain        = join(".", ["drive", var.apex_domain])
   docker_compose_version = "1.26.2"
@@ -122,9 +122,7 @@ resource "aws_instance" "public" {
 
   provisioner "remote-exec" {
     inline = [
-      "sudo yum update -y && sudo yum install docker -y",
-      "sudo curl -L \"https://github.com/docker/compose/releases/download/${local.docker_compose_version}/docker-compose-$(uname -s)-$(uname -m)\" -o /usr/local/bin/docker-compose",
-      "sudo chmod u+x /usr/local/bin/docker-compose"
+      "sudo amazon-linux-extras install -y ansible2"
     ]
   }
 }
@@ -140,6 +138,6 @@ resource "aws_route53_record" "drive_A" {
   type    = "A"
   ttl     = 30
   zone_id = data.aws_route53_zone.primary.zone_id
-  records = [aws_instance.public.public_ip]
+  records = [aws_eip.ip.public_ip]
 }
 
