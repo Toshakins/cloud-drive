@@ -19,10 +19,9 @@ locals {
   region = "eu-west-3" # Paris
 
   default_ami            = "ami-0bfddfb1ccc3a6993" # Amazon Linux 2
-  default_instance_type  = "t3a.nano"
+  default_instance_type  = "t3a.micro"
   default_public_key     = join(".", [local.proj, "pub"]) // will return "key_name.pub"
   drive_subdomain        = join(".", ["drive", var.apex_domain])
-  docker_compose_version = "1.26.2"
   tags = {
     Name = local.proj
   }
@@ -99,7 +98,7 @@ resource "aws_eip" "ip" {
 
 resource "aws_ebs_volume" "public_volume" {
   availability_zone = join("", [local.region, "b"])
-  size              = 5
+  size              = 20
   type              = "gp2"
   tags              = local.tags
 }
@@ -122,7 +121,7 @@ resource "aws_instance" "public" {
 
   provisioner "remote-exec" {
     inline = [
-      "sudo amazon-linux-extras install -y ansible2"
+      "sudo amazon-linux-extras install -y docker"
     ]
   }
 }

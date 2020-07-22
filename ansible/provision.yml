@@ -1,0 +1,8 @@
+---
+- hosts: all
+  become: yes
+  roles:
+    - {
+        role: "toshakins.docker-compose",
+        become: yes
+    }

@@ -1,0 +1,49 @@
+---
+# tasks file for toshakins.docker-compose
+- name: collect some facts
+  setup:
+    gather_subset:
+      - min
+
+- name: update package manager
+  yum:
+    name: '*'
+    state: latest
+
+- name: install pip
+  yum:
+    name: python-pip
+    state: latest
+
+- name: install docker deps
+  pip:
+    name:
+      - docker==4.2.2
+  become: yes
+
+- name: get docker compose file
+  get_url:
+    url: https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-{{ ansible_system }}-{{ ansible_machine }}
+    dest: "/usr/local/bin/docker-compose"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: u=rx,g=rx,o=rx
+  become: yes
+
+- name: set passwords
+  set_fact:
+    drive_db_password: "{{ lookup('password', '/tmp/drive_db_password length=24') }}"
+    drive_admin_password: "{{ lookup('password', '/tmp/drive_admin_password length=24') }}"
+
+- name: write docker compose template
+  template:
+    src: docker-compose.yml
+    dest: /home/{{ ansible_user }}/docker-compose.yml
+
+
+#- name: start docker
+#  docker_compose:
+#    project_src: "/home/{{ ansible_user }}"
+
+
+# to do: 1) start docker service 2) start docker compose under the root
