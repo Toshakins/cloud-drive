@@ -15,16 +15,35 @@
     name: python-pip
     state: latest
 
+- name: install gcc
+  yum:
+    name: gcc
+    state: latest
+  become: yes
+
 - name: install docker deps
   pip:
     name:
       - docker==4.2.2
+      - docker-compose==1.26.2
+      - PyYAML==5.3.1
   become: yes
+
+- name: remove gcc
+  yum:
+    name: gcc
+    state: absent
+
+- name: create directory for local executables
+  file:
+    path: "/home/{{ ansible_user }}/bin"
+    state: directory
+    mode: u=rwx
 
 - name: get docker compose file
   get_url:
     url: https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-{{ ansible_system }}-{{ ansible_machine }}
-    dest: "/usr/local/bin/docker-compose"
+    dest: "/home/{{ ansible_user }}/bin/docker-compose"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: u=rx,g=rx,o=rx
@@ -39,11 +58,16 @@
   template:
     src: docker-compose.yml
     dest: /home/{{ ansible_user }}/docker-compose.yml
+    backup: yes
 
+- name: start docker
+  service:
+    name: docker
+    state: started
 
-#- name: start docker
-#  docker_compose:
-#    project_src: "/home/{{ ansible_user }}"
+- name: start seafile
+  become: yes
+  docker_compose:
+    project_src: "/home/{{ ansible_user }}"
 
-
-# to do: 1) start docker service 2) start docker compose under the root
+## to do: do not install gcc if pip deps installed. Check if possible to avoid 80 port open. Resize ebs?
