@@ -18,10 +18,10 @@ locals {
   proj   = "cloud-drive"
   region = "eu-west-3" # Paris
 
-  default_ami            = "ami-0bfddfb1ccc3a6993" # Amazon Linux 2
-  default_instance_type  = "t3a.micro"
-  default_public_key     = join(".", [local.proj, "pub"]) // will return "key_name.pub"
-  drive_subdomain        = join(".", ["drive", var.apex_domain])
+  default_ami           = "ami-0bfddfb1ccc3a6993" # Amazon Linux 2
+  default_instance_type = "t3a.micro"
+  default_public_key    = join(".", [local.proj, "pub"]) // will return "key_name.pub"
+  drive_subdomain       = join(".", ["drive", var.apex_domain])
   tags = {
     Name = local.proj
   }
@@ -77,14 +77,6 @@ resource "aws_security_group" "default" {
   }
 
   ingress {
-    from_port   = 80
-    protocol    = "tcp"
-    to_port     = 80
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-
-  ingress {
     from_port   = 443
     protocol    = "tcp"
     to_port     = 443
@@ -104,20 +96,18 @@ resource "aws_eip" "ip" {
   tags     = local.tags
 }
 
-resource "aws_ebs_volume" "public_volume" {
-  availability_zone = join("", [local.region, "b"])
-  size              = 20
-  type              = "gp2"
-  tags              = local.tags
-}
-
 resource "aws_instance" "public" {
   ami                    = local.default_ami
   instance_type          = local.default_instance_type
   subnet_id              = aws_subnet.public.id
   key_name               = aws_key_pair.default.key_name
   vpc_security_group_ids = [aws_security_group.default.id]
-  tags                   = local.tags
+  root_block_device {
+    volume_type = "gp2"
+    volume_size = 20
+    encrypted   = true
+  }
+  tags = local.tags
 
   connection {
     # The default username for our AMI
@@ -131,6 +121,10 @@ resource "aws_instance" "public" {
     inline = [
       "sudo amazon-linux-extras install -y docker"
     ]
+  }
+
+  provisioner "local-exec" {
+    command = "ansible-playbook -i \"${self.public_ip},\" -u ec2-user ansible/provision.yml"
   }
 }
 
