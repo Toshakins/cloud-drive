@@ -137,7 +137,7 @@ data "aws_route53_zone" "primary" {
 resource "aws_route53_record" "drive_A" {
   name    = local.drive_subdomain
   type    = "A"
-  ttl     = 30
+  ttl     = 86400
   zone_id = data.aws_route53_zone.primary.zone_id
   records = [aws_eip.ip.public_ip]
 }
