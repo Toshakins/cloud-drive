@@ -111,7 +111,7 @@ resource "aws_instance" "public" {
   vpc_security_group_ids = [aws_security_group.default.id]
   root_block_device {
     volume_type = "gp2"
-    volume_size = 20
+    volume_size = 25
     encrypted   = true
   }
   tags = local.tags
