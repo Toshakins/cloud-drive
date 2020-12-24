@@ -110,7 +110,7 @@ resource "aws_instance" "public" {
   key_name               = aws_key_pair.default.key_name
   vpc_security_group_ids = [aws_security_group.default.id]
   root_block_device {
-    volume_type = "gp2"
+    volume_type = "gp3"
     volume_size = 25
     encrypted   = true
   }
