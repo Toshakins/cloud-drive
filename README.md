@@ -7,3 +7,7 @@ Name as your project and place in `~/.ssh`.
 ## Add key to ssh agent
 
 > ssh-add ~/.ssh/private_key
+
+## Connect
+
+Use a SeaFile client to connect to the share.
