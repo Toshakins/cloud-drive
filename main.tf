@@ -1,5 +1,5 @@
 terraform {
-  required_version = "~> 0.12"
+  required_version = "~> 1.0"
   backend "s3" {
     bucket         = "terraform-aws-init-bucket"
     key            = "cloudform/terraform.tfstate"
