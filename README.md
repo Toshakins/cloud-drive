@@ -8,6 +8,14 @@ Name as your project and place in `~/.ssh`.
 
 > ssh-add ~/.ssh/private_key
 
+## Install local dependencies
+
+> pip install -r dev-requirements.txt
+
+## Provision infrastructure
+
+> terraform apply
+
 ## Connect
 
 Use a SeaFile client to connect to the share.
