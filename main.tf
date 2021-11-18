@@ -18,7 +18,7 @@ locals {
   proj   = "cloud-drive"
   region = "eu-west-3" # Paris
 
-  default_ami           = "ami-0bfddfb1ccc3a6993" # Amazon Linux 2
+  default_ami           = "ami-05f0a049e7aeb407c" # Amazon Linux 2
   default_instance_type = "t3a.micro"
   default_public_key    = join(".", [local.proj, "pub"]) // will return "key_name.pub"
   drive_subdomain       = join(".", ["drive", var.apex_domain])
@@ -101,6 +101,7 @@ resource "aws_security_group" "default" {
 resource "aws_eip" "ip" {
   instance = aws_instance.public.id
   tags     = local.tags
+  depends_on = [aws_instance.public]
 }
 
 resource "aws_instance" "public" {
@@ -131,7 +132,7 @@ resource "aws_instance" "public" {
   }
 
   provisioner "local-exec" {
-    command = "ansible-playbook -i \"${self.public_ip},\" -u ec2-user ansible/provision.yml"
+    command = "ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i \"${self.public_ip},\" -u ec2-user ansible/provision.yml"
   }
 }
 
