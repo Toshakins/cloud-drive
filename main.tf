@@ -1,5 +1,5 @@
 terraform {
-  required_version = "~> 1.0"
+  required_version = "~> 1.9"
   backend "s3" {
     bucket         = "terraform-aws-init-bucket"
     key            = "cloudform/terraform.tfstate"
@@ -17,8 +17,9 @@ provider "aws" {
 locals {
   proj   = "cloud-drive"
   region = "eu-west-3" # Paris
+  user = "ubuntu"
 
-  default_ami           = "ami-05f0a049e7aeb407c" # Amazon Linux 2
+  default_ami           = "ami-09d83d8d719da9808" # Ubuntu
   default_instance_type = "t3a.micro"
   default_public_key    = join(".", [local.proj, "pub"]) // will return "key_name.pub"
   drive_subdomain       = join(".", ["drive", var.apex_domain])
@@ -119,20 +120,15 @@ resource "aws_instance" "public" {
 
   connection {
     # The default username for our AMI
-    user = "ec2-user"
+    user = local.user
     host = self.public_ip
 
     # The connection will use the local SSH agent for authentication.
   }
 
-  provisioner "remote-exec" {
-    inline = [
-      "sudo amazon-linux-extras install -y docker"
-    ]
-  }
-
   provisioner "local-exec" {
-    command = "ANSIBLE_CONFIG=ansible/ansible.cfg ansible-playbook -i \"${self.public_ip},\" -u ec2-user ansible/provision.yml"
+    command = "ANSIBLE_HOST_KEY_CHECKING=False sleep 120 && ansible-playbook -i \"${self.public_ip},\" -u \"${local.user}\" provision.yml"
+    working_dir = "./ansible"
   }
 }
 

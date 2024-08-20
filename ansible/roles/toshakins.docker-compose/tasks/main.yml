@@ -5,54 +5,38 @@
     gather_subset:
       - min
 
+- name: add Docker repository
+  block:
+    - name: docker | add apt key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+
+    - name: docker | add apt source
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
 - name: update package manager
-  yum:
+  apt:
     name: '*'
     state: latest
 
-- name: install pip
-  yum:
-    name: python-pip
-    state: latest
-
-- name: install gcc
-  yum:
-    name: gcc
-    state: latest
-  become: yes
-
-- name: install docker deps
-  pip:
+- name: install docker
+  package:
     name:
-      - docker==4.2.2
-      - docker-compose==1.26.2
-      - PyYAML==5.3.1
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
   become: yes
-
-- name: remove gcc
-  yum:
-    name: gcc
-    state: absent
-
-- name: create directory for local executables
-  file:
-    path: "/home/{{ ansible_user }}/bin"
-    state: directory
-    mode: u=rwx
 
 - name: add current user to the docker group
   ansible.builtin.user:
     name: "{{ ansible_user }}"
     group: "docker"
-
-- name: get docker compose file
-  get_url:
-    url: https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-{{ ansible_system }}-{{ ansible_machine }}
-    dest: "/home/{{ ansible_user }}/bin/docker-compose"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-    mode: u=rx,g=rx,o=rx
-  become: yes
 
 - name: set passwords
   set_fact:
@@ -72,7 +56,7 @@
 
 - name: start seafile
   become: yes
-  docker_compose:
+  community.docker.docker_compose_v2:
     project_src: "/home/{{ ansible_user }}"
 
 ## to do: do not install gcc if pip deps installed. Check if possible to avoid 80 port open. Resize ebs?
