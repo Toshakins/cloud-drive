@@ -20,7 +20,7 @@ locals {
   user = "ubuntu"
 
   default_ami           = "ami-09d83d8d719da9808" # Ubuntu
-  default_instance_type = "t3a.micro"
+  default_instance_type = "t3a.small"
   default_public_key    = join(".", [local.proj, "pub"]) // will return "key_name.pub"
   drive_subdomain       = join(".", ["drive", var.apex_domain])
   tags = {
@@ -103,6 +103,9 @@ resource "aws_eip" "ip" {
   instance = aws_instance.public.id
   tags     = local.tags
   depends_on = [aws_instance.public]
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_instance" "public" {
