@@ -19,8 +19,8 @@ locals {
   region = "eu-west-3" # Paris
   user = "ubuntu"
 
-  default_ami           = "ami-09d83d8d719da9808" # Ubuntu
-  default_instance_type = "t3a.small"
+  default_ami           = "ami-0aece9bb53a8a9b78" # NextCloud
+  default_instance_type = "t3.medium"
   default_public_key    = join(".", [local.proj, "pub"]) // will return "key_name.pub"
   drive_subdomain       = join(".", ["drive", var.apex_domain])
   tags = {
@@ -85,6 +85,13 @@ resource "aws_security_group" "default" {
   }
 
   ingress {
+    from_port   = 8443
+    protocol    = "tcp"
+    to_port     = 8443
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
     from_port   = 80
     protocol    = "tcp"
     to_port     = 80
@@ -120,19 +127,6 @@ resource "aws_instance" "public" {
     encrypted   = true
   }
   tags = local.tags
-
-  connection {
-    # The default username for our AMI
-    user = local.user
-    host = self.public_ip
-
-    # The connection will use the local SSH agent for authentication.
-  }
-
-  provisioner "local-exec" {
-    command = "ANSIBLE_HOST_KEY_CHECKING=False sleep 120 && ansible-playbook -i \"${self.public_ip},\" -u \"${local.user}\" provision.yml"
-    working_dir = "./ansible"
-  }
 }
 
 
